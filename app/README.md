@@ -62,8 +62,9 @@ o navegador aceita — é o que torna a tela inteira navegável sem iPhone.
 O build sai do GitHub Actions (`.github/workflows/ios.yml`), num runner macOS. É a única
 máquina Apple envolvida, e ela só compila.
 
-1. `git push` (ou rode o workflow à mão em **Actions → build iOS → Run workflow**)
-2. Baixe o artefato **ControleLG-ipa**
+1. `git push` (ou rode o workflow à mão em
+   [**Actions → build iOS → Run workflow**](https://github.com/eduardoperorck/lg-remote/actions/workflows/ios.yml))
+2. Abra o run que terminou e baixe o artefato **ControleLG-ipa** (fica 30 dias)
 
 O `.ipa` sai **sem assinatura** de propósito: quem assina é o SideStore, no telefone,
 com a sua conta gratuita da Apple.

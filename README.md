@@ -1,5 +1,8 @@
 # lg-remote
 
+[![testes Python](https://github.com/eduardoperorck/lg-remote/actions/workflows/python.yml/badge.svg)](https://github.com/eduardoperorck/lg-remote/actions/workflows/python.yml)
+[![build iOS](https://github.com/eduardoperorck/lg-remote/actions/workflows/ios.yml/badge.svg)](https://github.com/eduardoperorck/lg-remote/actions/workflows/ios.yml)
+
 Controle remoto da TV LG (webOS) que roda no navegador do celular, sem assinatura e sem loja
 de aplicativos. Além dos botões, ele busca uma série ou filme, descobre em qual serviço o
 título está no Brasil e **abre o app da TV já com a busca preenchida**.
