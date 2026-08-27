@@ -94,8 +94,11 @@ sempre é standby, histórico de conexões antigo, ou *Mobile TV On* desligado.
 
 ## O que ainda não foi verificado numa TV real
 
-O plugin Swift foi escrito e tem a sintaxe validada, mas **nunca rodou num iPhone**. A
-premissa que falta confirmar é a mais importante de todas: se o `URLSession` do iOS
+O plugin **compila** contra o SDK real da Apple — os seis arquivos Swift passam pelo
+`xcodebuild` no runner macOS e saem dentro de um `.ipa` de 3 MB. Isso é mais do que
+sintaxe validada, mas ainda não é execução: o plugin **nunca rodou num iPhone**.
+
+A premissa que falta confirmar é a mais importante de todas: se o `URLSession` do iOS
 aceita mesmo o certificado autoassinado desta TV. A teoria diz que sim; o primeiro
 pareamento é o teste.
 
