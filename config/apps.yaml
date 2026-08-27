@@ -1,0 +1,150 @@
+# Mapa serviço de streaming -> app na sua TV, e como chegar na busca dentro dele.
+#
+# ESTE É O ARQUIVO QUE VOCÊ EDITA. Fluxo:
+#   1. `lgremote discover`  -> preenche/confere os `app_id` lendo a SUA TV
+#   2. `lgremote try-title "Nome da Série" --service max`  -> executa passo a passo
+#   3. ajusta os `search` abaixo olhando a TV, repete o passo 2
+#
+# As sequências `search` abaixo são CHUTES INICIAIS. Layout de app de streaming muda
+# por região e por versão — quase certamente vão precisar de ajuste na primeira vez.
+# Isso é esperado, não é bug.
+#
+# Passos disponíveis:
+#   {button: UP|DOWN|LEFT|RIGHT|ENTER|BACK|HOME|..., times: 3, delay: 0.2}
+#   {wait: 1.5}          segundos
+#   {text: "{title}"}    digita via IME (teclado da TV); {title} e {year} são substituídos
+#   {enter: true}        tecla Enter do teclado (diferente do botão ENTER do direcional)
+#   {clear: 40}          apaga N caracteres antes de digitar
+
+services:
+  - id: netflix
+    label: Netflix
+    # Nomes como o TMDb devolve em watch/providers -> results.BR.flatrate[].provider_name
+    tmdb_names: [Netflix, "Netflix Standard with Ads", "Netflix basic with Ads"]
+    # Termos usados pelo `discover` para casar com o título do app na TV
+    match: [netflix]
+    app_id: netflix
+    wait_after_launch: 9
+    # Deep link: a Netflix aceita o ID interno DELA, que o TMDb não fornece.
+    # Deixe null e a macro cuida. Preencha só se você descobrir um alvo válido.
+    content_target: null
+    search:
+      - {wait: 2}
+      - {button: LEFT, times: 4, delay: 0.25}
+      - {button: UP, times: 3, delay: 0.25}
+      - {button: ENTER}
+      - {wait: 2}
+      - {text: "{title}"}
+      - {wait: 2}
+
+  - id: max
+    label: Max
+    tmdb_names: [Max, "Max Amazon Channel", HBO Max]
+    match: [max, hbo]
+    app_id: com.wbd.stream
+    wait_after_launch: 12   # o Max demora bem mais que os outros para ficar navegável
+    content_target: null
+    # Tela "Quem está assistindo?". Em TV, perfil adulto SEMPRE vê essa tela ao abrir o
+    # app do zero — a própria ajuda do Max diz que é por design. ENTER confirma o perfil
+    # que já vem destacado (o último usado).
+    # Ter esta macro preenchida faz o app ser FECHADO antes de abrir, para a tela
+    # aparecer sempre no mesmo lugar. Calibre com:
+    #   lgremote try-title "X" --service max --cold
+    profile:
+      - {button: ENTER}
+    # Contado a partir de o app assumir a tela, e nunca menor que wait_after_launch:
+    # mandar ENTER num app que ainda está subindo perde o toque em silêncio.
+    wait_before_profile: 14
+    search:
+      - {wait: 3}
+      - {button: LEFT, times: 4, delay: 0.25}
+      - {button: UP, times: 3, delay: 0.25}
+      - {button: ENTER}
+      - {wait: 2.5}
+      - {text: "{title}"}
+      - {wait: 2}
+    # Da página da série até TOCAR um episódio. Deixe vazio até calibrar: sem isto o
+    # app só abre a série (que já é o comportamento de hoje), em vez de errar o alvo.
+    #
+    # Grave a navegação até o EPISÓDIO 1; o {episode_index} faz o deslocamento
+    # (episódio 1 = 0 toques, episódio 4 = 3 toques). Exemplo do formato:
+    #   - {button: DOWN, times: 2}                    # descer até a faixa de episódios
+    #   - {button: RIGHT, times: "{episode_index}"}   # andar até o episódio pedido
+    #   - {button: ENTER}
+    episode: []
+    wait_before_episode: 6
+
+  - id: disney
+    label: Disney+
+    tmdb_names: [Disney Plus, "Disney+"]
+    match: [disney]
+    app_id: com.disney.disneyplus-prod
+    wait_after_launch: 10
+    content_target: null
+    # Ver a explicação em `max`. Se o seu perfil não for o primeiro da fila, acrescente
+    # os {button: RIGHT} necessários ANTES do ENTER.
+    profile:
+      - {button: ENTER}
+    wait_before_profile: 12
+    search:
+      - {wait: 2.5}
+      - {button: LEFT, times: 4, delay: 0.25}
+      - {button: UP, times: 2, delay: 0.25}
+      - {button: ENTER}
+      - {wait: 2}
+      - {text: "{title}"}
+      - {wait: 2}
+    # Ver a explicação em `max` acima.
+    episode: []
+    wait_before_episode: 5
+
+  - id: prime
+    label: Prime Video
+    tmdb_names: [Amazon Prime Video, "Amazon Video"]
+    match: [prime video, amazon]
+    app_id: amazon
+    wait_after_launch: 10
+    content_target: null
+    search:
+      - {wait: 2.5}
+      - {button: LEFT, times: 4, delay: 0.25}
+      - {button: UP, times: 3, delay: 0.25}
+      - {button: ENTER}
+      - {wait: 2}
+      - {text: "{title}"}
+      - {wait: 2}
+
+  - id: globoplay
+    label: Globoplay
+    tmdb_names: [Globoplay]
+    match: [globoplay, globo]
+    app_id: globoplaywebos
+    wait_after_launch: 10
+    content_target: null
+    search:
+      - {wait: 2.5}
+      - {button: LEFT, times: 4, delay: 0.25}
+      - {button: UP, times: 3, delay: 0.25}
+      - {button: ENTER}
+      - {wait: 2}
+      - {text: "{title}"}
+      - {wait: 2}
+
+  - id: youtube
+    label: YouTube
+    tmdb_names: []
+    match: [youtube]
+    app_id: youtube.leanback.v4
+    wait_after_launch: 6
+    content_target: null
+    search:
+      - {wait: 2}
+      - {button: LEFT, times: 4, delay: 0.25}
+      - {button: UP, times: 2, delay: 0.25}
+      - {button: ENTER}
+      - {wait: 1.5}
+      - {text: "{title}"}
+      - {wait: 1.5}
+
+# Atalhos que aparecem como botões no PWA, na ordem em que estão aqui.
+shortcuts: [max, disney, netflix, prime, globoplay, youtube]

@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Controle TV</title>
+<!-- viewport-fit=cover + safe-area no CSS: sem isso a área de navegação fica embaixo
+     da barra do iPhone. Sem user-scalable=no: bloquear zoom quebra acessibilidade, e o
+     que evitava o zoom acidental (font-size 16px, touch-action) continua no CSS. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d10">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TV">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icons/icon-180.png">
+<link rel="icon" href="/icons/icon-180.png">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<!-- Porta de entrada: sem PIN o servidor recusa tudo -->
+<section id="gate" class="gate" hidden>
+  <h1>Controle da TV</h1>
+  <p class="muted">Digite o PIN definido em <code>UI_PIN</code>.</p>
+  <form id="gate-form">
+    <input id="gate-pin" type="password" inputmode="numeric" autocomplete="off"
+           placeholder="PIN" maxlength="12" required>
+    <button type="submit" class="primary">Entrar</button>
+  </form>
+  <p id="gate-error" class="error" hidden></p>
+</section>
+
+<main id="app" hidden>
+
+  <header class="topbar">
+    <div class="status">
+      <span id="dot" class="dot"></span>
+      <span id="status-text">conectando…</span>
+    </div>
+    <div class="topbar-actions">
+      <span id="volume-badge" class="badge" hidden>—</span>
+      <button id="btn-settings" class="icon-btn" aria-label="Ajustes">⋯</button>
+      <button id="btn-power" class="icon-btn" aria-label="Ligar ou desligar a TV">⏻</button>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab is-active" data-tab="remote" role="tab" aria-selected="true">Controle</button>
+    <button class="tab" data-tab="find" role="tab" aria-selected="false">Buscar</button>
+  </nav>
+
+  <!-- ---------- aba CONTROLE ---------- -->
+  <section id="tab-remote" class="tab-panel" role="tabpanel">
+
+    <div id="shortcuts" class="shortcuts"></div>
+
+    <!-- Presets do app em foco. Fora do fluxo: aparecendo/sumindo sozinho a cada
+         atualização de estado, ele empurrava a área de navegação sob o seu dedo. -->
+    <div id="quick-presets" class="quick-presets" hidden></div>
+
+    <!-- Deslize = setas. Um ponteiro de verdade depende de cada app suportá-lo; setas
+         funcionam em todo lugar, e é o que o gravador de macro consegue registrar. -->
+    <div id="pad" class="pad" role="application" aria-label="Área de navegação: deslize para mover, toque para confirmar">
+      <span id="pad-hint" class="pad-hint">deslize para navegar<br>toque para abrir</span>
+      <span id="pad-echo" class="pad-echo" aria-hidden="true"></span>
+    </div>
+
+    <div class="row">
+      <button class="wide" data-button="BACK">↩ Voltar</button>
+      <button class="wide" data-button="PLAY" aria-label="Reproduzir">⏵</button>
+      <button class="wide" data-button="PAUSE" aria-label="Pausar">⏸</button>
+      <button class="wide" data-button="REWIND" aria-label="Retroceder">⏪</button>
+      <button class="wide" data-button="FASTFORWARD" aria-label="Avançar">⏩</button>
+    </div>
+
+    <div class="row">
+      <button class="wide" data-button="HOME">⌂ Início</button>
+      <button class="wide" data-button="VOLUMEDOWN" aria-label="Diminuir volume">Vol −</button>
+      <button class="wide" data-button="MUTE">Mudo</button>
+      <button class="wide" data-button="VOLUMEUP" aria-label="Aumentar volume">Vol +</button>
+    </div>
+
+    <form id="type-form" class="type-row">
+      <input id="type-text" type="text" placeholder="Digitar na TV…" maxlength="200"
+             autocomplete="off" autocapitalize="off" autocorrect="off">
+      <button type="submit" class="primary">Enviar</button>
+    </form>
+  </section>
+
+  <!-- ---------- aba BUSCAR ---------- -->
+  <section id="tab-find" class="tab-panel" role="tabpanel" hidden>
+    <form id="search-form" class="type-row">
+      <input id="search-input" type="search" placeholder="Nome da série ou filme…"
+             maxlength="100" autocomplete="off" enterkeyhint="search">
+      <button type="submit" class="primary">Buscar</button>
+    </form>
+    <p id="search-hint" class="muted"></p>
+    <div id="results" class="results"></div>
+    <p class="attribution">
+      Dados de disponibilidade por <strong>JustWatch</strong>, via TMDb.
+      Este produto usa a API do TMDb, mas não é endossado nem certificado pelo TMDb.
+    </p>
+  </section>
+
+</main>
+
+<!-- Feedback de ação longa. Sobreposto, não no fluxo: no fluxo ele empurrava a área de
+     navegação ~50px justo no meio de uma sequência de toques. -->
+<div id="banner" class="banner" hidden></div>
+
+<!-- ---------- ajustes: gravador e presets ---------- -->
+<!-- Fora das abas: é configuração feita uma vez por app, não uso diário. -->
+<div id="settings-modal" class="modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>Ajustes</h3>
+      <button id="settings-close" class="icon-btn" aria-label="Fechar">✕</button>
+    </div>
+
+    <h4 class="section-title">Gravar uma sequência</h4>
+    <p class="muted" id="rec-context">Abra o app na TV para gravar.</p>
+
+    <div id="rec-idle">
+      <label class="field-label" for="rec-target">O que gravar</label>
+      <select id="rec-target" class="field">
+        <option value="preset">Legenda/áudio (vira um botão de atalho)</option>
+        <option value="profile">Tela "Quem está assistindo?"</option>
+        <option value="search">Caminho até a busca</option>
+        <option value="episode">Caminho até o episódio</option>
+      </select>
+      <input id="rec-title" class="field" type="text" maxlength="200" hidden
+             placeholder="Título que você vai digitar (vira {title})" autocomplete="off">
+      <button id="btn-record" class="primary wide-block">● Gravar sequência</button>
+      <ol class="steps-hint muted">
+        <li>Deixe o app aberto na TV, na tela onde a sequência começa.</li>
+        <li>Toque em Gravar e navegue pela área de deslize, como sempre faz.</li>
+        <li>Volte aqui e toque em Parar.</li>
+      </ol>
+    </div>
+
+    <div id="rec-active" hidden>
+      <div class="recording-bar">
+        <span class="rec-dot"></span>
+        <span>Gravando — <strong id="rec-count">0</strong> toques</span>
+      </div>
+      <p class="muted">Navegue na aba Controle e volte aqui para salvar.</p>
+      <div class="row">
+        <button id="btn-record-stop" class="primary wide">Parar e salvar</button>
+        <button id="btn-record-cancel" class="wide">Descartar</button>
+      </div>
+    </div>
+
+    <h4 class="section-title">Atalhos de legenda salvos</h4>
+    <div id="presets-list" class="results"></div>
+  </div>
+</div>
+
+<!-- Diálogo de nome do preset -->
+<div id="name-modal" class="modal" hidden>
+  <form id="name-form" class="modal-box">
+    <h3>Nome do atalho</h3>
+    <p class="muted" id="name-hint"></p>
+    <input id="name-input" type="text" maxlength="40" placeholder="Ex.: Dublado" required
+           autocomplete="off">
+    <div class="row">
+      <button type="submit" class="primary wide">Salvar</button>
+      <button type="button" id="name-cancel" class="wide">Cancelar</button>
+    </div>
+  </form>
+</div>
+
+<!-- Escolha de temporada e episódio -->
+<div id="ep-modal" class="modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="ep-title">Episódios</h3>
+      <button id="ep-close" class="icon-btn" aria-label="Fechar">✕</button>
+    </div>
+    <div id="ep-seasons" class="season-row"></div>
+    <p id="ep-warn" class="muted" hidden></p>
+    <div id="ep-list" class="ep-list"></div>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>

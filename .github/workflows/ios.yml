@@ -1,0 +1,84 @@
+name: build iOS
+
+# Gera o .ipa sem assinatura, para instalar pelo SideStore. O projeto é desenvolvido
+# no Windows: este runner é a única máquina macOS envolvida, e ela só compila.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    # A lógica toda é TypeScript e roda em qualquer lugar — falhar aqui é barato e
+    # rápido, e evita ocupar um runner macOS (que custa 10x) com código quebrado.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+
+  ipa:
+    needs: test
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Gerar o projeto Xcode
+        # O `ios/` não é versionado: ele é derivado, e um .xcodeproj commitado viraria
+        # conflito a cada sync — ninguém no Windows consegue abri-lo para resolver.
+        run: |
+          npx cap add ios
+          npx cap sync ios
+
+      - name: Configurar Info.plist
+        run: ./scripts/configure-ios.sh
+
+      - name: Compilar sem assinatura
+        # Sem assinar de propósito: quem assina é o SideStore, no telefone, com a conta
+        # gratuita da Apple. Assinar aqui exigiria um certificado pago no repositório.
+        run: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath build/App.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            archive
+
+      - name: Empacotar o .ipa
+        # Um .ipa é um zip com o .app dentro de Payload/. Sem assinatura, `xcodebuild
+        # -exportArchive` recusaria; montar à mão é o caminho normal para sideload.
+        run: |
+          mkdir -p build/Payload
+          cp -R build/App.xcarchive/Products/Applications/App.app build/Payload/
+          cd build && zip -qry ControleLG.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ControleLG-ipa
+          path: app/build/ControleLG.ipa
+          retention-days: 30

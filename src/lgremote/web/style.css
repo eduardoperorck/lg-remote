@@ -1,0 +1,296 @@
+/* Controle de TV: usado no escuro, com o polegar, muitas vezes sem olhar.
+   Daí o tema escuro fixo e os alvos de toque grandes (mínimo 48px). */
+
+:root {
+  --bg: #0b0d10;
+  --surface: #161a20;
+  --surface-hi: #1e242c;
+  --line: #2a323c;
+  --text: #e8edf3;
+  --muted: #8b97a6;
+  --accent: #4c8dff;
+  --ok: #3ecf8e;
+  --err: #ff6b6b;
+  --radius: 14px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+/* O `hidden` do HTML vem da folha do navegador, então QUALQUER `display` daqui o
+   vence — e o elemento "escondido" continua na tela. Com .modal (fixed, inset:0)
+   isso vira um vidro invisível cobrindo tudo e engolindo os toques.
+   Esta regra tem de vir antes das outras e com !important. */
+[hidden] { display: none !important; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Impede o "puxa e solta" do Safari, que num controle parece bug */
+  overscroll-behavior: none;
+}
+
+body {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+           env(safe-area-inset-bottom) env(safe-area-inset-left);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+button, input {
+  font: inherit;
+  color: inherit;
+  touch-action: manipulation; /* mata o zoom de duplo-toque entre dois cliques rápidos */
+}
+
+button {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  min-height: 48px;
+  cursor: pointer;
+  transition: background .08s ease, transform .08s ease;
+}
+button:active { background: var(--surface-hi); transform: scale(.97); }
+button:disabled { opacity: .45; }
+/* :focus-visible e não :focus — o anel não deve aparecer a cada toque de dedo. */
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+
+input {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  min-height: 48px;
+  width: 100%;
+  /* 16px evita o zoom automático do Safari ao focar um campo */
+  font-size: 16px;
+}
+input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.muted { color: var(--muted); font-size: 14px; }
+.error { color: var(--err); font-size: 14px; }
+
+/* ---------- porta de entrada ---------- */
+.gate {
+  max-width: 380px;
+  margin: 0 auto;
+  padding: 18vh 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.gate h1 { font-size: 22px; margin: 0; }
+.gate form { display: flex; flex-direction: column; gap: 10px; }
+code { background: var(--surface); padding: 2px 6px; border-radius: 6px; }
+
+/* ---------- estrutura ----------
+   Coluna de altura fixa: nada rola na aba Controle. Antes, as alturas somadas passavam
+   da tela do iPhone e a área de navegação — o que mais se usa — só era alcançável
+   rolando. E como nada era fixo, rolar até ela escondia o status. */
+main {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 8px 14px calc(8px + env(safe-area-inset-bottom));
+  /* dvh e não vh: no Safari o vh ignora a barra e o rodapé some atrás dela. */
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; flex: none;
+}
+.status { display: flex; align-items: center; gap: 8px; min-width: 0; }
+/* Trunca: o detalhe do erro vem do servidor e, quebrando linha, empurrava a tela. */
+#status-text {
+  font-size: 14px; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
+.dot.online { background: var(--ok); }
+.dot.offline { background: var(--err); }
+.topbar-actions { display: flex; align-items: center; gap: 6px; flex: none; }
+.icon-btn { min-width: 48px; font-size: 18px; }
+.badge {
+  font-size: 13px; color: var(--muted); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px;
+}
+
+/* Sobreposto ao rodapé: no fluxo, aparecer/sumir movia os botões sob o seu dedo. */
+.banner {
+  position: fixed; z-index: 20;
+  left: 12px; right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  max-width: 496px; margin: 0 auto;
+  background: var(--surface-hi); border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 12px; padding: 12px 14px; font-size: 14px;
+}
+.banner.is-error { border-left-color: var(--err); }
+.banner.is-done  { border-left-color: var(--ok); }
+
+.tabs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; flex: none; }
+.tab { font-size: 15px; }
+.tab.is-active { background: var(--surface-hi); border-color: var(--accent); }
+
+.tab-panel { display: flex; flex-direction: column; gap: 10px; min-height: 0; flex: 1; }
+/* Só a busca rola: ela é uma lista, não um controle. */
+#tab-find { overflow-y: auto; }
+
+/* ---------- atalhos de app ----------
+   Uma linha que rola de lado, não uma grade de duas linhas: com 6 serviços, a grade
+   comia 120px da altura que a área de navegação precisa. */
+.shortcuts {
+  display: flex; gap: 8px; flex: none;
+  overflow-x: auto; scrollbar-width: none;
+}
+.shortcuts::-webkit-scrollbar { display: none; }
+.shortcuts button { flex: none; padding: 0 16px; font-size: 14px; white-space: nowrap; }
+
+.quick-presets { display: flex; gap: 8px; flex: none; overflow-x: auto; }
+.quick-presets button { flex: none; padding: 0 16px; font-size: 14px; white-space: nowrap; }
+
+/* ---------- área de navegação ----------
+   Deslizar manda setas. Um ponteiro de verdade depende de cada app suportá-lo; setas
+   funcionam em qualquer lugar em que o direcional funciona — e são o que o gravador de
+   macro consegue registrar, que é o que permite calibrar deslizando. */
+.pad {
+  flex: 1;
+  min-height: 180px;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  /* Sem isto o navegador rola a página em vez de entregar o gesto. */
+  touch-action: none;
+  overflow: hidden;
+}
+.pad.is-touched { background: var(--surface-hi); border-color: var(--accent); }
+.pad-hint {
+  color: var(--muted); font-size: 14px; text-align: center; line-height: 1.6;
+  transition: opacity .15s ease;
+}
+.pad.is-touched .pad-hint { opacity: 0; }
+/* O eco confirma a direção reconhecida: sem ele, um deslize que não pegou é
+   indistinguível de uma TV que não respondeu. */
+.pad-echo {
+  position: absolute; font-size: 44px; color: var(--accent);
+  opacity: 0; transition: opacity .12s ease;
+}
+.pad-echo.is-on { opacity: 1; }
+
+.row { display: flex; gap: 8px; flex: none; }
+.row .wide { flex: 1; font-size: 15px; padding: 0 4px; }
+
+.type-row { display: flex; gap: 8px; flex: none; }
+.type-row input { flex: 1; }
+.type-row button { flex: none; padding: 0 16px; }
+
+/* ---------- resultados da busca ---------- */
+.results { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+
+.card {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px;
+}
+.card img { width: 64px; border-radius: 8px; background: var(--surface-hi); display: block; }
+.card .meta { min-width: 0; }
+.card h3 { margin: 0 0 2px; font-size: 15px; line-height: 1.25; }
+.card .sub { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+.card .actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.card .actions button { min-height: 48px; padding: 0 14px; font-size: 14px; border-radius: 10px; }
+.card .none { color: var(--muted); font-size: 13px; }
+
+.attribution { color: var(--muted); font-size: 11px; line-height: 1.5; margin-top: 22px; }
+
+/* ---------- gravador e presets ---------- */
+.card-plain {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px;
+}
+.card-plain h2 { font-size: 16px; margin: 0 0 6px; }
+.card-plain p { margin: 0; }
+
+.wide-block { width: 100%; }
+
+.steps-hint { margin: 14px 0 0; padding-left: 20px; font-size: 13px; line-height: 1.8; }
+
+/* Gravando é um estado fácil de esquecer ligado — precisa ser impossível de ignorar. */
+.recording-bar {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255, 107, 107, .12); border: 1px solid var(--err);
+  border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px;
+}
+.rec-dot {
+  width: 11px; height: 11px; border-radius: 50%; background: var(--err); flex: none;
+  animation: pulse 1.1s ease-in-out infinite;
+}
+@keyframes pulse { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .rec-dot { animation: none; } }
+
+.section-title { font-size: 14px; color: var(--muted); margin: 22px 0 0; font-weight: 600; }
+
+.preset {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 8px 8px 8px 14px;
+}
+.preset .name { flex: 1; min-width: 0; }
+.preset .name strong { display: block; font-size: 15px; }
+.preset .name span { color: var(--muted); font-size: 12px; }
+.preset button { min-height: 48px; padding: 0 14px; border-radius: 10px; flex: none; }
+/* Afastado do "Usar": ação destrutiva a 8px da frequente convida ao erro. */
+.preset button.danger { margin-left: 10px; }
+
+/* ---------- modais ---------- */
+.modal {
+  position: fixed; inset: 0; z-index: 10;
+  background: rgba(0, 0, 0, .6);
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+.modal-box {
+  background: var(--bg); border: 1px solid var(--line); border-radius: 18px;
+  padding: 16px; width: 100%; max-width: 520px; max-height: 86dvh;
+  overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+}
+.modal-box h3 { margin: 0; font-size: 17px; }
+.modal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+.season-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.season-row button { flex: none; padding: 0 14px; min-height: 48px; border-radius: 10px; }
+.season-row button.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.ep-list { display: flex; flex-direction: column; gap: 8px; }
+.ep {
+  display: grid; grid-template-columns: 84px 1fr; gap: 10px; align-items: center;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; padding: 8px; text-align: left; min-height: 56px;
+}
+.ep img { width: 84px; border-radius: 8px; background: var(--surface-hi); display: block; }
+.ep .ep-meta { min-width: 0; }
+.ep .ep-num { color: var(--accent); font-size: 12px; font-weight: 700; }
+.ep .ep-name { font-size: 14px; line-height: 1.3; }
+.ep .ep-sub { color: var(--muted); font-size: 12px; }
+
+/* ---------- campos do gravador ---------- */
+.field {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 12px 14px; min-height: 48px;
+  width: 100%; font-size: 16px; color: inherit;
+}
+.field-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 2px; }

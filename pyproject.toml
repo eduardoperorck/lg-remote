@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lg-remote"
+version = "0.1.0"
+description = "Controle remoto da TV LG (webOS/SSAP) via PWA no celular, com busca de títulos"
+requires-python = ">=3.12"
+dependencies = [
+  # A partir da 0.9 o WebOsTvPairError virou irmão do CommandError, e é dessa forma
+  # que a session.py distingue "TV recusou" de "TV sumiu".
+  "aiowebostv>=0.9",
+  # Declarado de propósito, ainda que chegue junto com a aiowebostv: discovery.py e
+  # pairing.py falam websocket direto com a TV.
+  "aiohttp>=3.9",
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "httpx>=0.27",
+  "pydantic>=2.7",
+  "pydantic-settings>=2.2",
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2",
+  "pytest-asyncio>=0.23",
+  "ruff>=0.4",
+  "mypy>=1.10",
+  "types-pyyaml>=6.0",
+]
+
+[project.scripts]
+lgremote = "lgremote.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lgremote"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "C4", "SIM", "RUF", "ASYNC"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

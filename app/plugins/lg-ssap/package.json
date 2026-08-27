@@ -1,0 +1,15 @@
+{
+  "name": "lg-ssap",
+  "version": "0.1.0",
+  "description": "Ponte nativa para o SSAP da TV LG: WebSocket que aceita o certificado da TV, Keychain, Wake-on-LAN e varredura da rede.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    }
+  },
+  "peerDependencies": {
+    "@capacitor/core": "^7.0.0"
+  }
+}

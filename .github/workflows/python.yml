@@ -1,0 +1,36 @@
+name: testes Python
+
+# O servidor Python continua sendo o caminho de referência: é ele que o app iOS
+# porta, e é contra os testes dele que o porte foi conferido. Quebrar aqui é sinal
+# de que as duas implementações divergiram.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      # 3.12 é o piso declarado no pyproject. Testar o piso, e não a versão mais
+      # nova, é o que pega dependência que largou o suporte sem avisar.
+      - run: uv python install 3.12
+
+      - name: Instalar
+        run: uv sync --extra dev --frozen
+
+      - name: ruff
+        run: uv run --frozen ruff check .
+
+      - name: mypy
+        run: uv run --frozen mypy
+
+      - name: pytest
+        run: uv run --frozen pytest -q

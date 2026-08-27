@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+.env
+.env.tmp
+local-data/
+.use-system-python
+
+# app iOS
+app/node_modules/
+app/dist/
+app/build/
+# Projeto Xcode: é derivado do `cap add ios`, gerado no runner macOS a cada build.
+# Versioná-lo daria conflito a cada sync, e no Windows ninguém consegue abri-lo.
+app/ios/
