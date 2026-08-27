@@ -56,6 +56,21 @@ enum Discovery {
         }
     }
 
+    /// Deixa exatamente um chamador passar. Existe como classe (e não como `var`
+    /// capturada) para que o estado mutável tenha um dono, que é o que o Swift 6 exige.
+    private final class Once: @unchecked Sendable {
+        private let lock = NSLock()
+        private var done = false
+
+        func claim() -> Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            if done { return false }
+            done = true
+            return true
+        }
+    }
+
     /// Uma conexão TCP que abre é prova suficiente de que há algo escutando ali.
     static func probe(host: String, port: UInt16, timeout: TimeInterval) async -> Bool {
         guard let nwPort = NWEndpoint.Port(rawValue: port) else { return false }
@@ -68,14 +83,11 @@ enum Discovery {
         return await withCheckedContinuation { continuation in
             // O timeout e o stateUpdateHandler correm em filas diferentes e disputam
             // quem termina primeiro; resumir a continuation duas vezes derruba o app.
-            let lock = NSLock()
-            var finished = false
-            func settle(_ open: Bool) {
-                lock.lock()
-                let alreadyDone = finished
-                finished = true
-                lock.unlock()
-                guard !alreadyDone else { return }
+            // A trava vive dentro do Once porque as duas filas capturam o mesmo valor:
+            // uma `var` capturada por closures concorrentes é erro no Swift 6.
+            let once = Once()
+            let settle: @Sendable (Bool) -> Void = { open in
+                guard once.claim() else { return }
                 connection.cancel()
                 continuation.resume(returning: open)
             }
